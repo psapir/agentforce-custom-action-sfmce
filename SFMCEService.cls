@@ -4,22 +4,24 @@ public with sharing class SFMCEService {
 	public static void addToJourney(List<AddToJourneyRequest> requests)
 	{
 		for (AddToJourneyRequest req : requests) {
-            addToJourneyFuture(req.contactKey, req.emailAddress);
+            addToJourneyFuture(req.contactKey, req.emailAddress, req.conversationDescription);
         }
 	}
 
-	private static void addToJourney(String contactKey, String emailAddress) {
+	private static void addToJourney(String contactKey, String emailAddress, String conversationDescription) {
 		String authToken = authenticate();
-        String sfmceDomain = "YOUR_SFMCE_REST_DOMANI_HERE";
+       String sfmceDomain = 'YOUR_SFMCE_REST_DOMANI_HERE';
 		Blob b = Crypto.GenerateAESKey(128);
 		String h = EncodingUtil.ConvertTohex(b);
 		String guid = h.SubString(0,8)+ '-' + h.SubString(8,12) + '-' + h.SubString(12,16) + '-' + h.SubString(16,20) + '-' + h.substring(20);
         
         RequestBody messageRequest = new RequestBody();
         messageRequest.contactKey = contactKey;
-        messageRequest.eventDefinitionKey = "YOUR_EVENT_DEFINITION_KEY_HERE";
+        messageRequest.eventDefinitionKey = 'YOUR_EVENT_DEFINITION_KEY_HERE';
         messageRequest.data = new RequestData();
         messageRequest.data.emailAddress = emailAddress;
+        messageRequest.data.conversationDescription = conversationDescription;
+        messageRequest.data.contactKey = contactKey;
        
         Http http = new Http();
 		HttpRequest request = new HttpRequest();
@@ -30,18 +32,18 @@ public with sharing class SFMCEService {
 		request.setBody(JSON.serialize(messageRequest));
 		HttpResponse response = http.send(request);
 		if (response.getStatusCode() == 202) {
-			System.debug('#### WhatsApp API response: '+response.getBody());
+			System.debug('#### API response: '+response.getBody());
 		} else {
-			System.debug('WhatsApp SFMCE API Error: ' + response.getStatusCode() + ' ' + response.getStatus());
+			System.debug(' SFMCE API Error: ' + response.getStatusCode() + ' ' + response.getStatus());
 		}
 	}
   
     public static String authenticate() {
 		// You can also retrieve this information from Custom Metadata Objects (recommended)
-		String sfmceDomain = "YOUR_SFMCE_REST_DOMANI_HERE";
-		String clientID = "YOUR_SFMCE_CLIENT_ID";
-		String clientSecret = "YOUR_SFMCE_CLIENT_ID";
-		String mid = "YOUR_SFMCE_ACCOUNT_ID";
+		String sfmceDomain = 'YOUR_SFMCE_REST_DOMANI_HERE';
+		String clientID = 'YOUR_SFMCE_CLIENT_ID';
+		String clientSecret = 'YOUR_SFMCE_CLIENT_SECRET';
+		String mid = 'YOUR_SFMCE_ACCOUNT_ID';
 
 		MarketingCloudAuthRequest authRequest = new MarketingCloudAuthRequest(clientID,clientSecret,mid);
 		
@@ -65,8 +67,8 @@ public with sharing class SFMCEService {
 	}
 
 	@future(callout=true)
-	public static void addToJourneyFuture(String contactKey, String emailAddress) {
-    	addToJourney(contactKey, emailAddress);
+	public static void addToJourneyFuture(String contactKey, String emailAddress, String conversationDescription) {
+    	addToJourney(contactKey, emailAddress, conversationDescription);
 	}
 	
     public class MarketingCloudAuthRequest {
@@ -100,8 +102,10 @@ public with sharing class SFMCEService {
         
 	}
 
-    public  class RequestData {
+   public  class RequestData {
+       public String contactKey;
 		public String emailAddress;
+        public String conversationDescription; 
 	}
     
     public class AddToJourneyRequest {
@@ -111,5 +115,8 @@ public with sharing class SFMCEService {
     
     @InvocableVariable(label='ContactKey' required=true)
     public String contactKey;
+        
+         @InvocableVariable(label='Conversation Description' required=true)
+        public String conversationDescription;
 	}
 }
